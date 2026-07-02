@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE          = 'willstiti/tasklist-backend'
         SONAR_PROJECT_KEY     = 'Willstiti_cicd-tasklist-backend'
+        SONAR_HOST_URL        = 'https://sonarqube.cicd.kits.ext.educentre.fr'
     }
 
     options {
@@ -52,27 +53,20 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv() {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh """
-                            sonar-scanner \
-                              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                              -Dsonar.sources=src \
-                              -Dsonar.exclusions=src/app.ts,src/server.ts,src/routes/**,src/lib/**,src/__tests__/**/*.test.ts \
-                              -Dsonar.tests=src/__tests__ \
-                              -Dsonar.test.inclusions=src/__tests__/**/*.test.ts \
-                              -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                              -Dsonar.token=${SONAR_TOKEN}
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                        sonar-scanner \
+                          -Dsonar.host.url=${SONAR_HOST_URL} \
+                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.sources=src \
+                          -Dsonar.exclusions=src/app.ts,src/server.ts,src/routes/**,src/lib/**,src/__tests__/**/*.test.ts \
+                          -Dsonar.tests=src/__tests__ \
+                          -Dsonar.test.inclusions=src/__tests__/**/*.test.ts \
+                          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                          -Dsonar.qualitygate.wait=true \
+                          -Dsonar.qualitygate.timeout=300 \
+                          -Dsonar.token=${SONAR_TOKEN}
+                    """
                 }
             }
         }
