@@ -27,6 +27,7 @@ RUN apk add --no-cache openssl libc6-compat
 COPY package*.json ./
 
 RUN npm ci --omit=dev && npm cache clean --force
+RUN rm -f package.json package-lock.json
 
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
