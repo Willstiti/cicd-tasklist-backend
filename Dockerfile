@@ -14,7 +14,17 @@ COPY tsconfig.json ./
 COPY src ./src
 
 RUN npm run build
-RUN npm prune --omit=dev && npm cache clean --force
+
+FROM node:22-alpine AS prod-deps
+
+WORKDIR /app
+
+RUN apk add --no-cache openssl libc6-compat
+
+COPY package*.json ./
+COPY prisma ./prisma
+
+RUN npm ci --omit=dev && npm cache clean --force
 
 FROM node:22-alpine AS runtime
 
@@ -25,8 +35,9 @@ ENV PORT=3001
 
 RUN apk add --no-cache openssl libc6-compat
 
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
 
 EXPOSE 3001
 
