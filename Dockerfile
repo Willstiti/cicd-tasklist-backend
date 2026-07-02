@@ -35,6 +35,10 @@ ENV PORT=3001
 
 RUN apk add --no-cache openssl libc6-compat
 
+# Runtime only needs node to execute dist/server.js; remove npm/npx toolchain.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+	&& rm -f /usr/local/bin/npm /usr/local/bin/npx
+
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
