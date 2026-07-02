@@ -53,7 +53,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'Willstiti-sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh """
                         sonar-scanner \
                           -Dsonar.host.url=${SONAR_HOST_URL} \
