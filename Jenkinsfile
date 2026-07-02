@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE          = 'willstiti/tasklist-backend'
-        SONAR_PROJECT_KEY     = 'Willstiti_cicd-tasklist-backend'
+        SONAR_PROJECT_KEY     = 'William-examen'
         SONAR_HOST_URL        = 'https://sonarqube.cicd.kits.ext.educentre.fr'
     }
 
