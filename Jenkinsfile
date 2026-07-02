@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKER_IMAGE          = 'willstiti/tasklist-backend'
         SONAR_PROJECT_KEY     = 'Willstiti_cicd-tasklist-backend'
     }
@@ -95,25 +94,37 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-                sh """
-                    docker buildx build \
-                      --platform linux/amd64 \
-                      -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
-                      -t ${DOCKER_IMAGE}:latest \
-                      --sbom=true \
-                      --provenance=true \
-                      --push \
-                      .
-                """
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
+                    sh """
+                        docker buildx build \
+                          --platform linux/amd64 \
+                          -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
+                          -t ${DOCKER_IMAGE}:latest \
+                          --sbom=true \
+                          --provenance=true \
+                          --push \
+                          .
+                    """
+                }
             }
         }
     }
 
     post {
         always {
-            sh 'docker logout || true'
-            cleanWs()
+            script {
+                try {
+                    sh 'docker logout || true'
+                } catch (Exception e) {
+                    echo "docker logout ignoré (pas de contexte node/workspace): ${e.getClass().getSimpleName()}"
+                }
+                try {
+                    cleanWs()
+                } catch (Exception e) {
+                    echo "cleanWs ignoré (pas de workspace): ${e.getClass().getSimpleName()}"
+                }
+            }
         }
         success {
             echo "Pipeline backend terminé avec succès - image poussée : ${DOCKER_IMAGE}:${BUILD_NUMBER}"
