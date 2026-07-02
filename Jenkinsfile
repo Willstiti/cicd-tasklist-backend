@@ -54,10 +54,10 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'Willstiti-sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh """
+                    sh '''
                         sonar-scanner \
-                          -Dsonar.host.url=${SONAR_HOST_URL} \
-                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.host.url=$SONAR_HOST_URL \
+                          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
                           -Dsonar.sources=src \
                           -Dsonar.exclusions=src/app.ts,src/server.ts,src/routes/**,src/lib/**,src/__tests__/**/*.test.ts \
                           -Dsonar.tests=src/__tests__ \
@@ -65,8 +65,8 @@ pipeline {
                           -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
                           -Dsonar.qualitygate.wait=true \
                           -Dsonar.qualitygate.timeout=300 \
-                          -Dsonar.token=${SONAR_TOKEN}
-                    """
+                          -Dsonar.token=$SONAR_TOKEN
+                    '''
                 }
             }
         }
