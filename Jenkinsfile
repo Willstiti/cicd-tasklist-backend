@@ -95,21 +95,15 @@ pipeline {
 
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
-                      -v "$PWD:/work" \
-                      -w /work \
                       "$TRIVY_IMAGE" image --no-progress \
                       --format json \
-                      --output reports/trivy-image-report.json \
-                      "$DOCKER_IMAGE:$BUILD_NUMBER"
+                                            "$DOCKER_IMAGE:$BUILD_NUMBER" > reports/trivy-image-report.json
 
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
-                      -v "$PWD:/work" \
-                      -w /work \
                       "$TRIVY_IMAGE" image --no-progress \
                       --format spdx-json \
-                      --output reports/sbom-image-spdx.json \
-                      "$DOCKER_IMAGE:$BUILD_NUMBER"
+                                            "$DOCKER_IMAGE:$BUILD_NUMBER" > reports/sbom-image-spdx.json
 
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
