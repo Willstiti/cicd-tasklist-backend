@@ -5,6 +5,8 @@ pipeline {
         DOCKER_IMAGE          = 'willstiti/tasklist-backend'
         SONAR_PROJECT_KEY     = 'William-examen'
         SONAR_HOST_URL        = 'https://sonarqube.cicd.kits.ext.educentre.fr'
+        TRIVY_IMAGE           = 'aquasec/trivy:0.56.2'
+        TRIVY_SEVERITY        = 'HIGH,CRITICAL'
     }
 
     options {
@@ -86,20 +88,45 @@ pipeline {
             }
         }
 
+        stage('Trivy Scan (Block HIGH/CRITICAL)') {
+            steps {
+                sh '''
+                    mkdir -p reports
+
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v "$PWD:/work" \
+                      -w /work \
+                      "$TRIVY_IMAGE" image --no-progress \
+                      --format json \
+                      --output reports/trivy-image-report.json \
+                      "$DOCKER_IMAGE:$BUILD_NUMBER"
+
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v "$PWD:/work" \
+                      -w /work \
+                      "$TRIVY_IMAGE" image --no-progress \
+                      --format spdx-json \
+                      --output reports/sbom-image-spdx.json \
+                      "$DOCKER_IMAGE:$BUILD_NUMBER"
+
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      "$TRIVY_IMAGE" image --no-progress \
+                      --severity "$TRIVY_SEVERITY" \
+                      --exit-code 1 \
+                      "$DOCKER_IMAGE:$BUILD_NUMBER"
+                '''
+            }
+        }
+
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Willstiti-dockerhub-password', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
                     sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
-                    sh """
-                        docker buildx build \
-                          --platform linux/amd64 \
-                          -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
-                          -t ${DOCKER_IMAGE}:latest \
-                          --sbom=true \
-                          --provenance=true \
-                          --push \
-                          .
-                    """
+                    sh 'docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}'
+                    sh 'docker push ${DOCKER_IMAGE}:latest'
                 }
             }
         }
@@ -108,6 +135,7 @@ pipeline {
     post {
         always {
             script {
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/junit.xml,reports/trivy-image-report.json,reports/sbom-image-spdx.json,sbom-spdx.json'
                 try {
                     sh 'docker logout || true'
                 } catch (Exception e) {
