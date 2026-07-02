@@ -80,7 +80,6 @@ pipeline {
                       --platform linux/amd64 \
                       -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
                       -t ${DOCKER_IMAGE}:latest \
-                      --sbom=true \
                       --provenance=true \
                       --load \
                       .
